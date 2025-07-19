@@ -1,0 +1,63 @@
+name: Update
+
+on:
+  workflow_dispatch:
+  watch:
+    types: [started]
+  schedule:
+    - cron: "0,15,30,45 * * * *"
+
+permissions:
+  contents: write  # 确保具有写权限
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  Update:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: GetTime
+      run: echo "DATE=$(date +'%Y-%m-%d %H:%M:%S CST')" >> $GITHUB_ENV
+
+    - name: Download and Merge M3U
+      run: |
+        # 下载文件
+        wget https://raw.githubusercontent.com/YanG-1989/m3u/refs/heads/main/Gather.m3u -O ipv6-gather.m3u
+        wget https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u  -O ipv6-fmm.m3u
+        wget https://raw.githubusercontent.com/vbskycn/iptv/refs/heads/master/tv/iptv6.m3u  -O iptv6.m3u
+        wget https://raw.githubusercontent.com/vbskycn/iptv/refs/heads/master/tv/iptv4.m3u  -O iptv4.m3u
+        wget https://raw.githubusercontent.com/jisoypub/iptv/refs/heads/main/ipv4.m3u -O ipv4.m3u
+        #wget https://raw.githubusercontent.com/jisoypub/iptv/refs/heads/main/hk.m3u -O hktw.m3u
+
+        # 合并文件
+        echo "#EXTM3U" > merged_playlist.m3u
+        awk '/^#EXTINF/{channel=$0; getline; url=$0; if(!seen[channel]++){print channel >> "merged_playlist.m3u"; print url >> "merged_playlist.m3u"}}' ipv6-fmm.m3u ipv4.m3u ipv6-gather.m3u
+
+    - name: Update EPG
+      run: |
+        # 下载节目单
+        rm -f EPG.xml && wget https://epg.112114.xyz/pp.xml -O EPG.xml
+
+    - name: Update README
+      run: |
+        echo "已于 $DATE 自动更新频道" > README.md
+
+
+    - name: Clean and Commit Changes
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git checkout --orphan latest_branch
+        git add -A
+        git commit -am "$DATE"
+        git branch -D main
+        git branch -m main
+
+    - name: Push Changes
+      run: |
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+        git push -f origin main
