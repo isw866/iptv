@@ -43,7 +43,7 @@ jobs:
       run: |
         # 下载节目单
         # rm -f EPG.xml && wget http://epg.51zmt.top:8000/e1.xml.gz -O EPG.xml
-        rm -f EPG.xml && wget https://epg.112114.xyz/pp.xml -O EPG.xml
+        # rm -f EPG.xml && wget https://epg.112114.xyz/pp.xml -O EPG.xml
         rm -f K9SDEPG.xml.gz && wget https://raw.githubusercontent.com/sggc/SDU-IPTV-PRO/refs/heads/main/EPG/sggc.xml.gz -O K9SDEPG.xml.gz
 
     - name: Update README
